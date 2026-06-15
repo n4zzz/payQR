@@ -1,0 +1,85 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - navigation "Primary" [ref=e5]:
+      - link "JomQR Beta" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img "JomQR" [ref=e7]
+        - generic [ref=e8]: Beta
+      - button "Login" [ref=e10] [cursor=pointer]
+  - region "All-in-one networking card" [ref=e11]:
+    - img
+    - img
+    - generic [ref=e12]:
+      - heading "All-in-one networking card" [level=1] [ref=e13]:
+        - generic [ref=e14]: All-in-one
+        - generic [ref=e15]: networking
+        - generic [ref=e16]: card
+      - paragraph [ref=e17]: Share any link with a simple QR.
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: Preferred username
+          - generic [ref=e22]:
+            - generic [ref=e23]: jomqr.my/
+            - textbox "Preferred username jomqr.my/" [ref=e24]: yourname
+        - button "Get started for free" [ref=e25] [cursor=pointer]
+    - figure [ref=e26]:
+      - img "Phone mockup showing a JomQR profile QR card" [ref=e27]
+  - region "Sharing multiple links shouldn't feel messy" [ref=e28]:
+    - img
+    - img
+    - generic [ref=e29]:
+      - heading "Sharing multiple links shouldn't feel messy" [level=2] [ref=e30]:
+        - text: Sharing multiple
+        - text: links shouldn't
+        - text: feel messy
+      - paragraph [ref=e31]: One scan, and your audience gets access to everything that matters — neatly organised and easy to use.
+  - region "Loved by Malaysians" [ref=e32]:
+    - img
+    - heading "Loved by Malaysians" [level=2] [ref=e34]
+    - generic "User testimonials" [ref=e35]:
+      - article [ref=e36]:
+        - blockquote [ref=e37]: It looks compact and cute
+        - paragraph [ref=e38]: IBEVKOH
+      - article [ref=e39]:
+        - blockquote [ref=e40]: you so good!! this is what we need!! we need more doer! luvvvv <3
+        - paragraph [ref=e41]: ahpelano
+      - article [ref=e42]:
+        - blockquote [ref=e43]: Mantap sangat tuan! 👍🏻
+        - paragraph [ref=e44]: afeefluqmann
+      - article [ref=e45]:
+        - blockquote [ref=e46]: Amazing ui! Menarik interaction mcm ni
+        - paragraph [ref=e47]: kaberikram
+  - region "How we work" [ref=e48]:
+    - paragraph [ref=e49]: How we work
+    - heading "How we work" [level=2] [ref=e50]
+    - generic [ref=e51]:
+      - article [ref=e52]:
+        - generic [ref=e53]:
+          - paragraph [ref=e54]: Step 1
+          - heading "Create your links" [level=3] [ref=e55]
+        - img
+      - article [ref=e56]:
+        - generic [ref=e57]:
+          - paragraph [ref=e58]: Step 2
+          - heading "Tap to generate QR" [level=3] [ref=e59]
+        - img
+      - article [ref=e60]:
+        - generic [ref=e61]:
+          - paragraph [ref=e62]: Step 3
+          - heading "Show & Scan" [level=3] [ref=e63]
+        - img
+  - region "One scan. For all" [ref=e64]:
+    - generic [ref=e65]:
+      - heading "One scan. For all" [level=2] [ref=e66]:
+        - text: One scan.
+        - text: For all
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]: Preferred username
+          - generic [ref=e70]:
+            - generic [ref=e71]: jomqr.my/
+            - textbox "Preferred username jomqr.my/" [ref=e72]:
+              - /placeholder: danial
+              - text: yourname
+        - button "Get started for free" [ref=e73] [cursor=pointer]
+    - img
