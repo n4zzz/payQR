@@ -17,6 +17,7 @@
 .DS_Store
 *.pem
 npm-debug.log*
+.playwright-mcp
 
 # typescript
 next-env.d.ts
