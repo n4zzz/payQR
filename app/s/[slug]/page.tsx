@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
 import { PageShell } from "@/components/PageShell";
 import { SplitView } from "@/components/SplitView";
@@ -24,11 +24,13 @@ export default async function SessionPage({ params }: { params: { slug: string }
   const s = await getSession(params.slug);
   if (!s) notFound();
 
+  // Everyone opening a session link must sign in with their own account.
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const isHost = !!user && !!s.hostId && user.id === s.hostId;
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/s/${params.slug}`)}`);
+  const isHost = !!s.hostId && user.id === s.hostId;
 
   return (
     <PageShell>

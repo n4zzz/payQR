@@ -15,7 +15,7 @@ function GoogleIcon() {
   );
 }
 
-export function AuthForm() {
+export function AuthForm({ next = "/" }: { next?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +25,7 @@ export function AuthForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
     });
     // On success the browser navigates away to Google, so we don't reset loading.
     if (error) {
