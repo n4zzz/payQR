@@ -19,6 +19,7 @@ const STATE_CFG: Record<
 export function SplitView({ session, isHost }: { session: SessionView; isHost: boolean }) {
   const [shares, setShares] = useState<Share[]>(session.shares);
   const [error, setError] = useState<string | null>(null);
+  const itemized = session.mode === "itemized";
 
   const { service, sst } = useMemo(
     () => computeTotals(session.subtotal, session.servicePct, session.sstPct),
@@ -30,38 +31,36 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
   const confirmedCount = payers.filter((s) => s.state === "confirmed").length;
   const collected = payers.filter((s) => s.state === "confirmed").reduce((sum, s) => sum + s.amount, 0);
 
-  function setState(i: number, state: ShareState) {
+  function setShareState(i: number, state: ShareState) {
     setShares((rows) => rows.map((s, j) => (j === i ? { ...s, state } : s)));
   }
 
-  // Friend: tap own row to toggle unpaid <-> claimed ("I've paid").
   async function toggleClaim(i: number) {
     const share = shares[i];
     if (share.state === "host" || share.state === "confirmed") return;
     const prev = share.state;
     const next: ShareState = prev === "unpaid" ? "claimed" : "unpaid";
-    setState(i, next);
+    setShareState(i, next);
     setError(null);
-    if (!share.id) return; // preview link — local only, nothing to persist
+    if (!share.id) return;
     const { error } = await createClient().rpc(next === "claimed" ? "claim_share" : "unclaim_share", {
       p_share_id: share.id,
     });
     if (error) {
-      setState(i, prev);
+      setShareState(i, prev);
       setError("Couldn't update — check your connection and try again.");
     }
   }
 
-  // Host: confirm the money arrived.
   async function confirm(i: number) {
     const share = shares[i];
     if (!share.id || share.state === "host" || share.state === "confirmed") return;
     const prev = share.state;
-    setState(i, "confirmed");
+    setShareState(i, "confirmed");
     setError(null);
     const { error } = await createClient().rpc("confirm_share", { p_share_id: share.id });
     if (error) {
-      setState(i, prev);
+      setShareState(i, prev);
       setError("Couldn't confirm — try again.");
     }
   }
@@ -69,27 +68,25 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
   return (
     <>
       {/* wallet on top — pick a method, scan or save */}
-      <Wallet methods={session.methods} amount={per} />
+      <Wallet methods={session.methods} amount={itemized ? undefined : per} />
 
-      {/* split-bill info, directly below the wallet */}
-      <div
-        style={{
-          background: "#FBF9F3",
-          borderRadius: 16,
-          padding: "14px 16px",
-          margin: "26px 0 0",
-          fontFamily: mono,
-          fontSize: 13,
-          border: "1px solid #ece6da",
-        }}
-      >
-        <Row k="Subtotal" v={RM(session.subtotal)} />
-        <Row k={`Service charge ${session.servicePct}%`} v={RM(service)} />
-        <Row k={`SST ${session.sstPct}% (on subtotal + service)`} v={RM(sst)} />
-        <div style={{ borderTop: "1px dashed #ddd6c8", margin: "8px 0" }} />
-        <Row k="Total" v={RM(session.total)} bold />
-        <Row k={`Split ${shares.length} ways`} v={`${RM(per)} each`} accent />
-      </div>
+      {/* breakdown */}
+      {itemized ? (
+        <div style={{ ...boxStyle, color: MUTED, fontFamily: "inherit" }}>
+          Everyone pays for what they ordered, plus <b style={{ color: INK }}>{session.servicePct}%</b> service +{" "}
+          <b style={{ color: INK }}>{session.sstPct}%</b> SST. <b style={{ color: TEAL }}>{RM(session.total)}</b> to
+          collect in total.
+        </div>
+      ) : (
+        <div style={{ ...boxStyle, fontFamily: mono, fontSize: 13 }}>
+          <Row k="Subtotal" v={RM(session.subtotal)} />
+          <Row k={`Service charge ${session.servicePct}%`} v={RM(service)} />
+          <Row k={`SST ${session.sstPct}% (on subtotal + service)`} v={RM(sst)} />
+          <div style={{ borderTop: "1px dashed #ddd6c8", margin: "8px 0" }} />
+          <Row k="Total" v={RM(session.total)} bold />
+          <Row k={`Split ${shares.length} ways`} v={`${RM(per)} each`} accent />
+        </div>
+      )}
 
       {/* roster */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", margin: "22px 0 10px" }}>
@@ -103,18 +100,7 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
         {shares.map((p, i) => {
           if (p.state === "host") {
             return (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  background: "#F2EFE7",
-                  border: "1px solid #e6e0d3",
-                }}
-              >
+              <div key={i} style={{ ...rowStyle, background: "#F2EFE7", border: "1px solid #e6e0d3" }}>
                 <span style={dot("#1A1A17", "#1A1A17", "#fff")}>★</span>
                 <span style={{ fontWeight: 600 }}>
                   {p.name} <span style={{ color: MUTED, fontWeight: 400, fontSize: 12 }}>· host</span>
@@ -127,39 +113,45 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
           const cfg = STATE_CFG[p.state];
           const dotBd = cfg.dot === "transparent" ? "#cfc8b9" : cfg.dot;
 
-          // Host view: status + a Confirm button (for non-confirmed payers).
+          // ----- itemized: a card with the person's order -----
+          if (itemized) {
+            return (
+              <div key={i} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 8, background: cfg.bg, border: `1px solid ${cfg.bd}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={dot(cfg.dot, dotBd, "#fff")}>{cfg.mark}</span>
+                  <span style={{ fontWeight: 600 }}>{p.name}</span>
+                  <span style={{ fontSize: 11, color: cfg.tagC, marginLeft: 6 }}>{cfg.tag}</span>
+                  <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 14, fontWeight: 600, color: cfg.tagC }}>
+                    {RM(p.amount)}
+                  </span>
+                </div>
+
+                {p.items && p.items.length > 0 && (
+                  <div style={{ paddingLeft: 36, display: "flex", flexDirection: "column", gap: 2 }}>
+                    {p.items.map((it, k) => (
+                      <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: MUTED, fontFamily: mono }}>
+                        <span>{it.name || "item"}</span>
+                        <span>{RM(it.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ paddingLeft: 36 }}>{actionButton(p.state, i, isHost, toggleClaim, confirm)}</div>
+              </div>
+            );
+          }
+
+          // ----- equal: host gets a Confirm button, friends tap the row -----
           if (isHost) {
             return (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  background: cfg.bg,
-                  border: `1px solid ${cfg.bd}`,
-                }}
-              >
+              <div key={i} style={{ ...rowStyle, background: cfg.bg, border: `1px solid ${cfg.bd}` }}>
                 <span style={dot(cfg.dot, dotBd, "#fff")}>{cfg.mark}</span>
                 <span style={{ fontWeight: 500 }}>{p.name}</span>
                 <span style={{ fontSize: 11, color: cfg.tagC, marginLeft: 8 }}>{cfg.tag}</span>
                 <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 14, color: cfg.tagC }}>{RM(p.amount)}</span>
                 {p.state !== "confirmed" && (
-                  <button
-                    onClick={() => confirm(i)}
-                    style={{
-                      all: "unset",
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: "#fff",
-                      background: TEAL,
-                      borderRadius: 999,
-                      padding: "6px 12px",
-                    }}
-                  >
+                  <button onClick={() => confirm(i)} style={confirmBtn}>
                     Confirm
                   </button>
                 )}
@@ -167,24 +159,13 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
             );
           }
 
-          // Friend view: tap to toggle "I've paid".
           const locked = p.state === "confirmed";
           return (
             <button
               key={i}
               onClick={() => toggleClaim(i)}
               disabled={locked}
-              style={{
-                all: "unset",
-                cursor: locked ? "default" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "10px 12px",
-                borderRadius: 12,
-                background: cfg.bg,
-                border: `1px solid ${cfg.bd}`,
-              }}
+              style={{ all: "unset", cursor: locked ? "default" : "pointer", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: cfg.bg, border: `1px solid ${cfg.bd}` }}
             >
               <span style={dot(cfg.dot, dotBd, "#fff")}>{cfg.mark}</span>
               <span style={{ fontWeight: 500 }}>{p.name}</span>
@@ -201,10 +182,10 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
 
       <p style={{ fontSize: 11, color: MUTED, marginTop: 18, lineHeight: 1.6 }}>
         {isHost ? (
-          <>Tap <b>Confirm</b> once the money lands in your account. PayQR can&apos;t see real transactions, so you confirm.</>
+          <>Tap <b>Confirm</b> once the money lands. PayQR can&apos;t see real transactions, so you confirm.</>
         ) : (
           <>
-            Paid? Tap your name to mark it. {session.hostName} confirms once the money arrives.{" "}
+            Paid? Tap your name / “I’ve paid”. {session.hostName} confirms once it arrives.{" "}
             <span style={{ color: CORAL }}>Check the name in your banking app before paying.</span>
           </>
         )}
@@ -213,17 +194,33 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
   );
 }
 
+function actionButton(
+  state: ShareState,
+  i: number,
+  isHost: boolean,
+  toggleClaim: (i: number) => void,
+  confirm: (i: number) => void
+) {
+  if (state === "confirmed") {
+    return <span style={{ fontSize: 12, color: TEAL, fontWeight: 600 }}>✓ confirmed</span>;
+  }
+  if (isHost) {
+    return (
+      <button onClick={() => confirm(i)} style={confirmBtn}>
+        Confirm
+      </button>
+    );
+  }
+  return (
+    <button onClick={() => toggleClaim(i)} style={{ ...confirmBtn, background: state === "claimed" ? "#B07A12" : TEAL }}>
+      {state === "claimed" ? "Paid ✓ · undo" : "I've paid"}
+    </button>
+  );
+}
+
 function Row({ k, v, bold, accent }: { k: string; v: string; bold?: boolean; accent?: boolean }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "2px 0",
-        color: accent ? TEAL : INK,
-        fontWeight: bold || accent ? 600 : 400,
-      }}
-    >
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", color: accent ? TEAL : INK, fontWeight: bold || accent ? 600 : 400 }}>
       <span style={{ color: bold || accent ? undefined : MUTED }}>{k}</span>
       <span>{v}</span>
     </div>
@@ -245,3 +242,32 @@ function dot(bg: string, bd: string, color: string): React.CSSProperties {
     color,
   };
 }
+
+const boxStyle: React.CSSProperties = {
+  background: "#FBF9F3",
+  borderRadius: 16,
+  padding: "14px 16px",
+  margin: "26px 0 0",
+  border: "1px solid #ece6da",
+  fontSize: 13,
+  lineHeight: 1.5,
+};
+
+const rowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "10px 12px",
+  borderRadius: 12,
+};
+
+const confirmBtn: React.CSSProperties = {
+  all: "unset",
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#fff",
+  background: TEAL,
+  borderRadius: 999,
+  padding: "6px 14px",
+};

@@ -1,7 +1,7 @@
 import { themeFor } from "./providers";
 import { SUPABASE_URL } from "./supabase/config";
 import { createClient } from "./supabase/server";
-import type { Method, ProfilePage, SessionView, ShareState } from "./types";
+import type { Item, Method, ProfilePage, SessionMode, SessionView, ShareState } from "./types";
 
 function publicQrUrl(path: string): string {
   return `${SUPABASE_URL}/storage/v1/object/public/qr-codes/${path}`;
@@ -58,7 +58,7 @@ export async function getSession(slug: string): Promise<SessionView | null> {
   const { data: session } = await supabase
     .from("split_sessions")
     .select(
-      "id, title, subtotal, service_pct, sst_pct, total, host_id, profiles!split_sessions_host_id_fkey(username, display_name)"
+      "id, title, subtotal, service_pct, sst_pct, total, split_mode, host_id, profiles!split_sessions_host_id_fkey(username, display_name)"
     )
     .eq("share_slug", slug)
     .maybeSingle();
@@ -70,7 +70,7 @@ export async function getSession(slug: string): Promise<SessionView | null> {
 
   const { data: shares } = await supabase
     .from("split_shares")
-    .select("id, name, amount, state")
+    .select("id, name, amount, state, items")
     .eq("session_id", session.id);
 
   const { data: methods } = await supabase
@@ -90,12 +90,17 @@ export async function getSession(slug: string): Promise<SessionView | null> {
     sstPct: Number(session.sst_pct),
     total: Number(session.total),
     hostId: session.host_id,
-    shares: (shares ?? []).map((s) => ({
-      id: s.id,
-      name: s.name,
-      amount: Number(s.amount),
-      state: s.state as ShareState,
-    })),
+    mode: ((session as { split_mode?: string }).split_mode as SessionMode) ?? "equal",
+    shares: (shares ?? []).map((s) => {
+      const rawItems = (s as { items?: Item[] | null }).items;
+      return {
+        id: s.id,
+        name: s.name,
+        amount: Number(s.amount),
+        state: s.state as ShareState,
+        items: Array.isArray(rawItems) && rawItems.length ? rawItems.map((it) => ({ name: it.name, price: Number(it.price) })) : undefined,
+      };
+    }),
     methods: (methods ?? []).map(rowToMethod),
   };
 }

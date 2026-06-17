@@ -18,29 +18,43 @@ export type ProfilePage = {
 
 export type ShareState = "host" | "unpaid" | "claimed" | "confirmed";
 
+// A single meal-order line in itemized mode.
+export type Item = { name: string; price: number };
+
 export type Share = {
   id?: string;
   name: string;
   amount: number;
   state: ShareState;
+  items?: Item[]; // itemized mode only
 };
 
-// What the create-session form collects (host included separately).
+export type SessionMode = "equal" | "itemized";
+
+// One person (excl. host) in the create form's itemized mode.
+export type DraftPerson = { name: string; items: Item[] };
+
+// What the create-session form submits.
 export type SessionDraft = {
   title: string;
-  subtotal: number;
+  mode: SessionMode;
   servicePct: number;
   sstPct: number;
   hostName: string;
+  // equal mode
+  subtotal: number;
   names: string[];
+  // itemized mode
+  people: DraftPerson[];
 };
 
 export type SessionView = {
   slug: string;
   title: string;
-  hostId?: string; // present for persisted (DB) sessions; absent for preview links
+  hostId?: string; // present for persisted (DB) sessions
   hostName: string;
   hostUsername: string;
+  mode?: SessionMode; // defaults to "equal" when absent
   subtotal: number;
   servicePct: number;
   sstPct: number;
