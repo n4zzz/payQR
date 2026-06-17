@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
 import { PageShell } from "@/components/PageShell";
 import { WalletManager } from "@/components/WalletManager";
+import { SITE_HOST } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 import { MUTED, TEAL } from "@/lib/tokens";
 
@@ -41,7 +42,7 @@ export default async function WalletDashboard() {
       <p style={{ color: MUTED, fontSize: 14, margin: "0 0 18px", lineHeight: 1.5 }}>
         Upload the QR images from your banking / e-wallet apps. They show on your page at{" "}
         <Link href={`/${profile.username}`} style={{ color: TEAL, textDecoration: "none" }}>
-          payqr.my/{profile.username}
+          {SITE_HOST}/{profile.username}
         </Link>
         .
       </p>

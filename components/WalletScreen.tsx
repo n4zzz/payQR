@@ -2,6 +2,7 @@ import { CreateSessionButton } from "@/components/CreateSessionButton";
 import { PageShell } from "@/components/PageShell";
 import { SettingsButton } from "@/components/SettingsButton";
 import { Wallet } from "@/components/Wallet";
+import { SITE_HOST } from "@/lib/site";
 import { CORAL, MUTED, mono } from "@/lib/tokens";
 import type { ProfilePage } from "@/lib/types";
 
@@ -12,7 +13,7 @@ export function WalletScreen({ profile }: { profile: ProfilePage }) {
         <span style={{ fontFamily: mono, color: CORAL, fontSize: 13 }}>★</span>
         <h1 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>Pay {profile.displayName}</h1>
       </div>
-      <p style={{ color: MUTED, fontSize: 13, margin: "2px 0 0 26px", fontFamily: mono }}>payqr.my/{profile.username}</p>
+      <p style={{ color: MUTED, fontSize: 13, margin: "2px 0 0 26px", fontFamily: mono }}>{SITE_HOST}/{profile.username}</p>
 
       <div style={{ marginTop: 16 }}>
         <Wallet methods={profile.methods} />

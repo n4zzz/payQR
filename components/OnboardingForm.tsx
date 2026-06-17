@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { validateUsername } from "@/lib/reserved";
+import { SITE_HOST } from "@/lib/site";
 import { CORAL, MUTED, mono } from "@/lib/tokens";
 import { fieldLabel, primaryBtn, textInput } from "@/lib/uiStyles";
 
@@ -78,7 +79,7 @@ export function OnboardingForm({
               whiteSpace: "nowrap",
             }}
           >
-            payqr.my/
+            {SITE_HOST}/
           </span>
           <input
             value={username}
