@@ -11,9 +11,11 @@ import { fieldLabel, primaryBtn, textInput } from "@/lib/uiStyles";
 export function OnboardingForm({
   initialUsername,
   initialName,
+  next = "",
 }: {
   initialUsername: string;
   initialName: string;
+  next?: string;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState(initialUsername);
@@ -52,7 +54,7 @@ export function OnboardingForm({
       return;
     }
 
-    router.push(`/${u}`);
+    router.push(next || `/${u}`);
     router.refresh();
   }
 

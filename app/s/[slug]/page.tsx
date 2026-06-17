@@ -30,6 +30,17 @@ export default async function SessionPage({ params }: { params: { slug: string }
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/s/${params.slug}`)}`);
+
+  // Must claim a username before viewing a split.
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!me || me.username.startsWith("user_")) {
+    redirect(`/onboarding?next=${encodeURIComponent(`/s/${params.slug}`)}`);
+  }
+
   const isHost = !!s.hostId && user.id === s.hostId;
 
   return (
