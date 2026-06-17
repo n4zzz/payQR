@@ -45,7 +45,7 @@ export default async function SessionPage({ params }: { params: { slug: string }
 
   return (
     <PageShell>
-      <BackButton href={`/${s.hostUsername}`} label={`Back to ${s.hostName}`} />
+      <BackButton href={`/${me.username}`} label="My wallet" />
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
         <span style={{ fontFamily: mono, color: CORAL, fontSize: 13 }}>÷</span>
         <h1 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>{s.title}</h1>
