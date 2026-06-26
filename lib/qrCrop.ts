@@ -1,5 +1,20 @@
 import jsQR from "jsqr";
 
+declare global {
+  interface BarcodeDetector {
+    detect(source: HTMLImageElement | HTMLCanvasElement | ImageBitmap): Promise<
+      Array<{
+        cornerPoints?: { x: number; y: number }[];
+        boundingBox?: { x: number; y: number; width: number; height: number };
+      }>
+    >;
+  }
+  interface BarcodeDetectorConstructor {
+    new (options?: { formats?: string[] }): BarcodeDetector;
+  }
+  var BarcodeDetector: BarcodeDetectorConstructor | undefined;
+}
+
 const DETECT_MAX = 1000; // downscale long edge for fast detection
 const OUTPUT_SIZE = 600; // normalized square output
 const QUIET_ZONE = 0.12; // extra white border around the QR, as a fraction of its size
@@ -22,6 +37,33 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 
 function readCode(data: ImageData, width: number, height: number) {
   return jsQR(data.data, width, height, { inversionAttempts: "attemptBoth" });
+}
+
+interface QrLocation {
+  topLeftCorner: { x: number; y: number };
+  topRightCorner: { x: number; y: number };
+  bottomRightCorner: { x: number; y: number };
+  bottomLeftCorner: { x: number; y: number };
+}
+
+async function detectWithBarcodeDetector(img: HTMLImageElement | HTMLCanvasElement): Promise<QrLocation | null> {
+  if (typeof BarcodeDetector === "undefined") return null;
+  try {
+    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    const codes = await detector.detect(img);
+    if (!codes || codes.length === 0) return null;
+    const c = codes[0];
+    if (!c.cornerPoints || c.cornerPoints.length < 4) return null;
+    const [tl, tr, br, bl] = c.cornerPoints;
+    return {
+      topLeftCorner: { x: tl.x, y: tl.y },
+      topRightCorner: { x: tr.x, y: tr.y },
+      bottomRightCorner: { x: br.x, y: br.y },
+      bottomLeftCorner: { x: bl.x, y: bl.y },
+    };
+  } catch {
+    return null;
+  }
 }
 
 function toGrayscale(data: ImageData): Uint8ClampedArray {
@@ -102,8 +144,14 @@ function makeBinaryAdaptive(data: ImageData, radius = 10, c = 5): ImageData {
   return out;
 }
 
-function tryDetect(data: ImageData) {
-  // 1) original color image
+async function tryDetect(data: ImageData, source?: HTMLImageElement | HTMLCanvasElement) {
+  // 1) native BarcodeDetector (often handles colored QRs better)
+  if (source) {
+    const nativeLoc = await detectWithBarcodeDetector(source);
+    if (nativeLoc) return { location: nativeLoc };
+  }
+
+  // 2) original color image with jsQR
   let code = readCode(data, data.width, data.height);
   if (code) return code;
 
@@ -162,7 +210,7 @@ export async function detectAndCropQr(file: File): Promise<Blob | null> {
     if (!dctx) return null;
     dctx.drawImage(img, 0, 0, dw, dh);
     const data = dctx.getImageData(0, 0, dw, dh);
-    let code = tryDetect(data);
+    let code = await tryDetect(data, det);
 
     // 2) if downscaled detection fails, try at full resolution once
     if (!code && scale < 1) {
@@ -173,7 +221,7 @@ export async function detectAndCropQr(file: File): Promise<Blob | null> {
       if (fctx) {
         fctx.drawImage(img, 0, 0);
         const fullData = fctx.getImageData(0, 0, img.width, img.height);
-        code = tryDetect(fullData);
+        code = await tryDetect(fullData, full);
       }
     }
     if (!code) return null;

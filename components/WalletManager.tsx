@@ -36,6 +36,7 @@ export function WalletManager({ userId, initial }: { userId: string; initial: Ma
   const [detecting, setDetecting] = useState(false);
   const [autoCrop, setAutoCrop] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
 
   const [fileKey, setFileKey] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -52,6 +53,7 @@ export function WalletManager({ userId, initial }: { userId: string; initial: Ma
     setFile(f);
     setCropBlob(null);
     setDetected(null);
+    setPreviewError(false);
     if (!f) return;
     setDetecting(true);
     try {
@@ -71,6 +73,7 @@ export function WalletManager({ userId, initial }: { userId: string; initial: Ma
 
   // Preview reflects exactly what will be uploaded.
   useEffect(() => {
+    setPreviewError(false);
     const blob = autoCrop && cropBlob ? cropBlob : file;
     if (!blob) {
       setPreviewUrl(null);
@@ -305,9 +308,18 @@ export function WalletManager({ userId, initial }: { userId: string; initial: Ma
             >
               {detecting ? (
                 <span style={{ fontSize: 11, color: MUTED }}>Scanning…</span>
-              ) : previewUrl ? (
+              ) : previewUrl && !previewError ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={previewUrl} alt="QR preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                <img
+                  src={previewUrl}
+                  alt="QR preview"
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                  onError={() => setPreviewError(true)}
+                />
+              ) : previewError ? (
+                <span style={{ fontSize: 11, color: MUTED, textAlign: "center", padding: 8 }}>
+                  Preview unavailable
+                </span>
               ) : null}
             </div>
             <div style={{ minWidth: 0 }}>
