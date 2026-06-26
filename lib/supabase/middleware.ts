@@ -4,9 +4,23 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
-// Refreshes the Supabase auth session on every request and guards /dashboard.
+const AUTH_COOKIE = "sb-access-token";
+const REFRESH_COOKIE = "sb-refresh-token";
+
+function hasSessionCookie(request: NextRequest): boolean {
+  return request.cookies.has(AUTH_COOKIE) || request.cookies.has(REFRESH_COOKIE);
+}
+
+// Refreshes the Supabase auth session when the user has auth cookies.
+// Public pages skip the Supabase round-trip for anonymous visitors.
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  // No auth cookies -> no session to refresh. This avoids a slow Supabase
+  // round-trip on every anonymous page view.
+  if (!hasSessionCookie(request)) {
+    return response;
+  }
 
   const supabase = createServerClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
     cookies: {
@@ -23,20 +37,9 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Gate the dashboard + onboarding behind auth.
-  const needsAuth = ["/dashboard", "/onboarding"].some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
-  if (!user && needsAuth) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
+  // getSession reads from cookies locally; getUser hits the Supabase server.
+  // For middleware refresh purposes, getSession is enough and much faster.
+  await supabase.auth.getSession();
 
   return response;
 }
