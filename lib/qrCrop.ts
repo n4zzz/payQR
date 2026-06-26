@@ -17,6 +17,55 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
+function readCode(data: ImageData, width: number, height: number) {
+  return jsQR(data.data, width, height, { inversionAttempts: "attemptBoth" });
+}
+
+function toGrayscale(data: ImageData): Uint8ClampedArray {
+  const gray = new Uint8ClampedArray(data.width * data.height);
+  for (let i = 0; i < data.data.length; i += 4) {
+    const r = data.data[i];
+    const g = data.data[i + 1];
+    const b = data.data[i + 2];
+    // Luminance
+    gray[i / 4] = 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+  return gray;
+}
+
+function makeBinary(data: ImageData, threshold: number, invert: boolean): ImageData {
+  const gray = toGrayscale(data);
+  const out = new ImageData(data.width, data.height);
+  for (let i = 0; i < gray.length; i++) {
+    const on = gray[i] < threshold;
+    const v = invert ? !on : on;
+    const c = v ? 0 : 255;
+    out.data[i * 4] = c;
+    out.data[i * 4 + 1] = c;
+    out.data[i * 4 + 2] = c;
+    out.data[i * 4 + 3] = 255;
+  }
+  return out;
+}
+
+function tryDetect(data: ImageData) {
+  // 1) original color image
+  let code = readCode(data, data.width, data.height);
+  if (code) return code;
+
+  // 2) grayscale + binary at multiple thresholds + both polarities
+  const thresholds = [64, 96, 128, 160, 192];
+  for (const t of thresholds) {
+    for (const invert of [false, true]) {
+      const bin = makeBinary(data, t, invert);
+      code = readCode(bin, bin.width, bin.height);
+      if (code) return code;
+    }
+  }
+
+  return null;
+}
+
 // Detect a QR in the image and return a cropped, square PNG (QR + white quiet
 // zone), normalized to OUTPUT_SIZE. Returns null if no QR is found.
 export async function detectAndCropQr(file: File): Promise<Blob | null> {
@@ -33,7 +82,7 @@ export async function detectAndCropQr(file: File): Promise<Blob | null> {
     if (!dctx) return null;
     dctx.drawImage(img, 0, 0, dw, dh);
     const data = dctx.getImageData(0, 0, dw, dh);
-    const code = jsQR(data.data, dw, dh, { inversionAttempts: "attemptBoth" });
+    const code = tryDetect(data);
     if (!code) return null;
 
     // 2) bounding box of the QR corners, mapped back to full resolution
