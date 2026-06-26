@@ -25,7 +25,7 @@ function cleanItems(items: Item[] | undefined): Item[] {
 // Persists a session + its shares for the signed-in host. Recomputes all amounts
 // server-side (never trusts client totals). Returns the slug.
 export async function createSession(draft: SessionDraft): Promise<{ slug: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -119,7 +119,7 @@ export async function createSession(draft: SessionDraft): Promise<{ slug: string
 // Deletes a session (and its shares, via ON DELETE CASCADE). Host-only — RLS
 // plus the host_id filter ensure no one can delete someone else's session.
 export async function deleteSession(slug: string): Promise<void> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

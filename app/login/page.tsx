@@ -8,7 +8,7 @@ import { MUTED } from "@/lib/tokens";
 export default async function LoginPage({ searchParams }: { searchParams: { next?: string } }) {
   const next = safeNext(searchParams.next, "/");
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

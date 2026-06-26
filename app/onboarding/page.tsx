@@ -9,7 +9,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: {
   const next =
     typeof searchParams.next === "string" && searchParams.next.startsWith("/") ? searchParams.next : "";
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

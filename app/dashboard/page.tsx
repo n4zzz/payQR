@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MUTED, TEAL, mono } from "@/lib/tokens";
 
 export default async function Dashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

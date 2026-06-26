@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { INK, MUTED } from "@/lib/tokens";
 
 export default async function NewSession() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

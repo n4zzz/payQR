@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MUTED, TEAL } from "@/lib/tokens";
 
 export default async function WalletDashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

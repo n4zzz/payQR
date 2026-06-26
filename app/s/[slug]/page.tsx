@@ -26,7 +26,7 @@ export default async function SessionPage({ params }: { params: { slug: string }
   if (!s) notFound();
 
   // Everyone opening a session link must sign in with their own account.
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

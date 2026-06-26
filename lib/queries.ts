@@ -30,7 +30,7 @@ function rowToMethod(row: MethodRow): Method {
 
 // Wallet-only page data for /[username].
 export async function getProfilePage(username: string): Promise<ProfilePage | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, username, display_name")
@@ -54,7 +54,7 @@ export async function getProfilePage(username: string): Promise<ProfilePage | nu
 
 // Session page data for /s/[slug].
 export async function getSession(slug: string): Promise<SessionView | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: session } = await supabase
     .from("split_sessions")
     .select(

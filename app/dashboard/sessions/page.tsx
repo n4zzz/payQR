@@ -12,7 +12,7 @@ function fmtDate(iso: string) {
 }
 
 export default async function SessionsDashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
