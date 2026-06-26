@@ -5,9 +5,13 @@ import { PageShell } from "@/components/PageShell";
 import { createClient } from "@/lib/supabase/server";
 import { MUTED } from "@/lib/tokens";
 
-export default async function OnboardingPage({ searchParams }: { searchParams: { next?: string } }) {
-  const next =
-    typeof searchParams.next === "string" && searchParams.next.startsWith("/") ? searchParams.next : "";
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next: nextRaw } = await searchParams;
+  const next = typeof nextRaw === "string" && nextRaw.startsWith("/") ? nextRaw : "";
 
   const supabase = await createClient();
   const {

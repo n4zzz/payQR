@@ -11,9 +11,10 @@ import { createClient } from "@/lib/supabase/server";
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const s = await getSession(params.slug);
+  const { slug } = await params;
+  const s = await getSession(slug);
   if (!s) return { title: "Not found" };
   return {
     title: `${s.title} — pay ${s.hostName}`,
@@ -21,8 +22,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function SessionPage({ params }: { params: { slug: string } }) {
-  const s = await getSession(params.slug);
+export default async function SessionPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const s = await getSession(slug);
   if (!s) notFound();
 
   // Everyone opening a session link must sign in with their own account.
@@ -30,7 +32,7 @@ export default async function SessionPage({ params }: { params: { slug: string }
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/s/${params.slug}`)}`);
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/s/${slug}`)}`);
 
   // Must claim a username before viewing a split.
   const { data: me } = await supabase
@@ -39,7 +41,7 @@ export default async function SessionPage({ params }: { params: { slug: string }
     .eq("id", user.id)
     .maybeSingle();
   if (!me || me.username.startsWith("user_")) {
-    redirect(`/onboarding?next=${encodeURIComponent(`/s/${params.slug}`)}`);
+    redirect(`/onboarding?next=${encodeURIComponent(`/s/${slug}`)}`);
   }
 
   const isHost = !!s.hostId && user.id === s.hostId;

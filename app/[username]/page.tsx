@@ -6,9 +6,10 @@ import { getProfilePage } from "@/lib/queries";
 export async function generateMetadata({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }): Promise<Metadata> {
-  const data = await getProfilePage(params.username);
+  const { username } = await params;
+  const data = await getProfilePage(username);
   if (!data) return { title: "Not found" };
   return {
     title: `Pay ${data.displayName}`,
@@ -16,8 +17,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProfilePage({ params }: { params: { username: string } }) {
-  const data = await getProfilePage(params.username);
+export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  const data = await getProfilePage(username);
   if (!data) notFound();
   return <WalletScreen profile={data} />;
 }

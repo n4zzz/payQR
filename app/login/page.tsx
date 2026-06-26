@@ -5,8 +5,13 @@ import { safeNext } from "@/lib/safeNext";
 import { createClient } from "@/lib/supabase/server";
 import { MUTED } from "@/lib/tokens";
 
-export default async function LoginPage({ searchParams }: { searchParams: { next?: string } }) {
-  const next = safeNext(searchParams.next, "/");
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next: nextRaw } = await searchParams;
+  const next = safeNext(nextRaw, "/");
 
   const supabase = await createClient();
   const {
