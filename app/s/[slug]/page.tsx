@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
+import { DeleteSessionButton } from "@/components/DeleteSessionButton";
 import { PageShell } from "@/components/PageShell";
 import { SplitView } from "@/components/SplitView";
 import { getSession } from "@/lib/queries";
@@ -55,6 +56,8 @@ export default async function SessionPage({ params }: { params: { slug: string }
       </p>
 
       <SplitView session={s} isHost={isHost} />
+
+      {isHost && <DeleteSessionButton slug={s.slug} />}
     </PageShell>
   );
 }

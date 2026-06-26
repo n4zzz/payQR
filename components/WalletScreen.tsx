@@ -20,7 +20,7 @@ export function WalletScreen({ profile }: { profile: ProfilePage }) {
       </div>
 
       <p style={{ fontSize: 11, color: MUTED, marginTop: 26, lineHeight: 1.6, textAlign: "center" }}>
-        PayQR only shows QR images {profile.displayName} uploaded — it never holds or moves money. Check the name in your
+        payQR only shows QR images {profile.displayName} uploaded — it never holds or moves money. Check the name in your
         banking app before paying.
       </p>
     </PageShell>

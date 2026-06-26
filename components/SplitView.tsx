@@ -182,7 +182,7 @@ export function SplitView({ session, isHost }: { session: SessionView; isHost: b
 
       <p style={{ fontSize: 11, color: MUTED, marginTop: 18, lineHeight: 1.6 }}>
         {isHost ? (
-          <>Tap <b>Confirm</b> once the money lands. PayQR can&apos;t see real transactions, so you confirm.</>
+          <>Tap <b>Confirm</b> once the money lands. payQR can&apos;t see real transactions, so you confirm.</>
         ) : (
           <>
             Paid? Tap your name / “I’ve paid”. {session.hostName} confirms once it arrives.{" "}

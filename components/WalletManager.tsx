@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PROVIDER_THEME, PROVIDERS, themeFor, type Provider } from "@/lib/providers";
-import { detectAndCropQr } from "@/lib/qrCrop";
+import { detectAndCropQr, reencodeToPng } from "@/lib/qrCrop";
 import { QR_BUCKET, qrPublicUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/client";
 import { CORAL, INK, MUTED, TEAL, mono } from "@/lib/tokens";
 import { fieldLabel, primaryBtn, textInput } from "@/lib/uiStyles";
+import { LIMITS, tooLong } from "@/lib/validators";
 
 type ManagedMethod = {
   id: string;
@@ -18,11 +19,9 @@ type ManagedMethod = {
 };
 
 const MAX_BYTES = 5 * 1024 * 1024; // generous — screenshots can be a few MB before cropping
-const ACCEPTED: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-};
+// QR uploads are always re-encoded to PNG before storage so we never trust
+// the browser-supplied file.type. This prevents malicious files spoofed as images.
+const ACCEPTED = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export function WalletManager({ userId, initial }: { userId: string; initial: ManagedMethod[] }) {
   const router = useRouter();
@@ -87,22 +86,29 @@ export function WalletManager({ userId, initial }: { userId: string; initial: Ma
     setError(null);
     if (!file) return setError("Choose a QR image.");
     if (!label.trim()) return setError("Add a label.");
+    const labelErr = tooLong(label.trim(), LIMITS.methodLabel);
+    if (labelErr) return setError(labelErr);
+    const hintErr = tooLong(hint.trim(), LIMITS.methodHint);
+    if (hintErr) return setError(hintErr);
 
-    const useCropped = autoCrop && !!cropBlob;
-    const blob: Blob = useCropped ? cropBlob! : file;
-    const ext = useCropped ? "png" : ACCEPTED[file.type];
-    const contentType = useCropped ? "image/png" : file.type;
-    if (!ext) return setError("Use a PNG, JPG or WEBP image.");
+    if (!ACCEPTED.has(file.type)) return setError("Use a PNG, JPG or WEBP image.");
+
+    let blob: Blob;
+    try {
+      blob = autoCrop && cropBlob ? cropBlob : await reencodeToPng(file);
+    } catch {
+      return setError("Could not read image. Use a valid PNG, JPG or WEBP.");
+    }
     if (blob.size > MAX_BYTES) return setError("Image is too large.");
 
     setBusy(true);
     const supabase = createClient();
     const id = crypto.randomUUID();
-    const path = `${userId}/${id}.${ext}`;
+    const path = `${userId}/${id}.png`;
 
     const { error: upErr } = await supabase.storage
       .from(QR_BUCKET)
-      .upload(path, blob, { contentType, upsert: false });
+      .upload(path, blob, { contentType: "image/png", upsert: false });
     if (upErr) {
       setError(upErr.message);
       setBusy(false);

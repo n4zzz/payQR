@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "PayQR", template: "%s · PayQR" },
+  title: { default: "payQR", template: "%s · payQR" },
   description: "One link for all your pay-me QRs. Split bills, get paid back.",
 };
 

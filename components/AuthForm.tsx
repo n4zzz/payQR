@@ -64,7 +64,7 @@ export function AuthForm({ next = "/" }: { next?: string }) {
       {error && <p style={{ color: CORAL, fontSize: 13, margin: 0 }}>{error}</p>}
 
       <p style={{ color: MUTED, fontSize: 12, lineHeight: 1.6, textAlign: "center" }}>
-        We only use your Google name and email to set up your PayQR page.
+        We only use your Google name and email to set up your payQR page.
       </p>
     </div>
   );

@@ -1,7 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { round2, taxFactor } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
+import { LIMITS, tooLong } from "@/lib/validators";
 import type { Item, SessionDraft, ShareState } from "@/lib/types";
 
 function makeSlug(): string {
@@ -28,6 +31,11 @@ export async function createSession(draft: SessionDraft): Promise<{ slug: string
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
 
+  const titleErr = tooLong(draft.title.trim(), LIMITS.sessionTitle);
+  if (titleErr || draft.title.trim() === "") throw new Error("Invalid session title.");
+  const hostErr = tooLong(draft.hostName.trim(), LIMITS.shareName);
+  if (hostErr) throw new Error("Invalid host name.");
+
   const factor = taxFactor(draft.servicePct, draft.sstPct);
   let subtotal = 0;
   let total = 0;
@@ -36,7 +44,16 @@ export async function createSession(draft: SessionDraft): Promise<{ slug: string
 
   if (draft.mode === "itemized") {
     const friends = (draft.people ?? [])
-      .map((p) => ({ name: p.name.trim(), items: cleanItems(p.items) }))
+      .map((p) => {
+        const nameErr = tooLong(p.name.trim(), LIMITS.shareName);
+        if (nameErr) throw new Error(`Name too long: ${p.name.trim().slice(0, 20)}...`);
+        const items = cleanItems(p.items).map((it) => {
+          const itemErr = tooLong(it.name, LIMITS.itemName);
+          if (itemErr) throw new Error(`Item name too long: ${it.name.slice(0, 20)}...`);
+          return it;
+        });
+        return { name: p.name.trim(), items };
+      })
       .filter((p) => p.name !== "");
     if (friends.length === 0) throw new Error("Add at least one person with their order.");
 
@@ -53,7 +70,13 @@ export async function createSession(draft: SessionDraft): Promise<{ slug: string
   } else {
     subtotal = round2(Number(draft.subtotal) || 0);
     total = round2(subtotal * factor);
-    const names = (draft.names ?? []).map((n) => n.trim()).filter(Boolean);
+    const names = (draft.names ?? [])
+      .map((n) => {
+        const err = tooLong(n.trim(), LIMITS.shareName);
+        if (err) throw new Error(`Name too long: ${n.trim().slice(0, 20)}...`);
+        return n.trim();
+      })
+      .filter(Boolean);
     headcount = names.length + 1;
     const per = round2(total / headcount);
     rows = [
@@ -91,4 +114,24 @@ export async function createSession(draft: SessionDraft): Promise<{ slug: string
   if (sharesError) throw new Error(sharesError.message);
 
   return { slug };
+}
+
+// Deletes a session (and its shares, via ON DELETE CASCADE). Host-only — RLS
+// plus the host_id filter ensure no one can delete someone else's session.
+export async function deleteSession(slug: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in");
+
+  const { error } = await supabase
+    .from("split_sessions")
+    .delete()
+    .eq("share_slug", slug)
+    .eq("host_id", user.id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/sessions");
+  redirect("/dashboard/sessions");
 }
