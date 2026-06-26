@@ -94,21 +94,31 @@ export function WalletManager({ userId, initial }: { userId: string; initial: Ma
     if (!ACCEPTED.has(file.type)) return setError("Use a PNG, JPG or WEBP image.");
 
     let blob: Blob;
+    let contentType: string;
     try {
       blob = autoCrop && cropBlob ? cropBlob : await reencodeToPng(file);
+      contentType = "image/png";
     } catch {
-      return setError("Could not read image. Use a valid PNG, JPG or WEBP.");
+      // Re-encoding can fail for some browser-decodable images (e.g. exotic
+      // color profiles). Fall back to the original file, but only if the
+      // browser-reported MIME type is in our accepted list.
+      if (!ACCEPTED.has(file.type)) {
+        return setError("Could not read image. Use a valid PNG, JPG or WEBP.");
+      }
+      blob = file;
+      contentType = file.type;
     }
     if (blob.size > MAX_BYTES) return setError("Image is too large.");
 
     setBusy(true);
     const supabase = createClient();
     const id = crypto.randomUUID();
-    const path = `${userId}/${id}.png`;
+    const ext = contentType === "image/webp" ? "webp" : contentType === "image/jpeg" ? "jpg" : "png";
+    const path = `${userId}/${id}.${ext}`;
 
     const { error: upErr } = await supabase.storage
       .from(QR_BUCKET)
-      .upload(path, blob, { contentType: "image/png", upsert: false });
+      .upload(path, blob, { contentType, upsert: false });
     if (upErr) {
       setError(upErr.message);
       setBusy(false);
