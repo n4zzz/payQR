@@ -4,7 +4,7 @@
 
 ### Get paid back.
 
-You covered the whole table. Again. **payQR** turns *"eh, settle later ya"* into a link your friends actually tap.
+You covered the whole table. Again. **payQR** make it easy for u to share the split digitally.
 
 One link for all your e-wallet QRs. Split any bill in seconds. Watch the payments roll in.
 
