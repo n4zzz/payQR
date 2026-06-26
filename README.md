@@ -61,9 +61,9 @@ payQR **never touches your money**. It only shows the QR images you upload — s
 
 ## 📸 Screenshots
 
-> _Add a few here — your wallet page, a split session, and the share screen make the pitch instantly._
->
-> `docs/wallet.png` · `docs/split.png` · `docs/share.png`
+| Your wallet page | A split session |
+|---|---|
+| ![Wallet page](docs/wallet.png) | ![Split session](docs/split.png) |
 
 ---
 
