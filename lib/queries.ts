@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { themeFor } from "./providers";
 import { SUPABASE_URL } from "./supabase/config";
 import { createClient } from "./supabase/server";
@@ -30,16 +29,7 @@ function rowToMethod(row: MethodRow): Method {
 }
 
 // Wallet-only page data for /[username].
-export const getProfilePage = unstable_cache(
-  async (username: string): Promise<ProfilePage | null> => {
-    const data = await fetchProfilePage(username);
-    return data;
-  },
-  ["profile-page"],
-  { revalidate: 60 }
-);
-
-async function fetchProfilePage(username: string): Promise<ProfilePage | null> {
+export async function getProfilePage(username: string): Promise<ProfilePage | null> {
   const supabase = createClient();
   const { data: profile } = await supabase
     .from("profiles")
@@ -63,16 +53,7 @@ async function fetchProfilePage(username: string): Promise<ProfilePage | null> {
 }
 
 // Session page data for /s/[slug].
-export const getSession = unstable_cache(
-  async (slug: string): Promise<SessionView | null> => {
-    const data = await fetchSession(slug);
-    return data;
-  },
-  ["session-page"],
-  { revalidate: 30 }
-);
-
-async function fetchSession(slug: string): Promise<SessionView | null> {
+export async function getSession(slug: string): Promise<SessionView | null> {
   const supabase = createClient();
   const { data: session } = await supabase
     .from("split_sessions")
